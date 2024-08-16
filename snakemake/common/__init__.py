@@ -50,6 +50,7 @@ PIP_DEPLOYMENTS_PATH = ".snakemake/pip-deployments"
 
 
 def get_snakemake_searchpaths():
+    """Retrieve a list of search paths for Snakemake."""
     paths = [str(Path(__file__).parent.parent.parent)] + [
         path for path in sys.path if os.path.isdir(path)
     ]
@@ -57,10 +58,28 @@ def get_snakemake_searchpaths():
 
 
 def mb_to_mib(mb):
+    """Convert megabytes (MB) to mebibytes (MiB).
+
+    Args:
+        mb (int): The size in megabytes.
+
+    Returns:
+        int: The size in mebibytes, rounded up.
+    """
     return int(math.ceil(mb * 0.95367431640625))
 
 
 def parse_key_value_arg(arg, errmsg, strip_quotes=True):
+    """Parse a key-value pair from a string argument.
+
+    Args:
+        arg (str): The argument string to parse, formatted as 'key=value'.
+        errmsg (str): The error message to raise if parsing fails.
+        strip_quotes (bool, optional): Whether to strip quotes from the value. Defaults to True.
+
+    Returns:
+        tuple: A tuple containing the key and value as strings.
+    """
     try:
         key, val = arg.split("=", 1)
     except ValueError:
@@ -73,6 +92,16 @@ def parse_key_value_arg(arg, errmsg, strip_quotes=True):
 def dict_to_key_value_args(
     some_dict: dict, quote_str: bool = True, repr_obj: bool = False
 ):
+    """Convert a dictionary to a list of key-value pair strings.
+
+    Args:
+        some_dict (dict): The dictionary to convert.
+        quote_str (bool, optional): Whether to quote string values. Defaults to True.
+        repr_obj (bool, optional): Whether to represent objects using repr. Defaults to False.
+
+    Returns:
+        list: A list of key-value pair strings.
+    """
     items = []
     for key, value in some_dict.items():
         if repr_obj and not isinstance(value, str):
@@ -89,6 +118,15 @@ def async_run(coroutine):
     .. seealso::
          https://github.com/snakemake/snakemake/issues/1105
          https://stackoverflow.com/a/65696398
+
+    Args:
+        coroutine (coroutine): The coroutine to run.
+
+    Returns:
+        Any: The result of the coroutine execution.
+
+    Raises:
+        WorkflowError: If Snakemake is run from an already running event loop.
     """
     try:
         return asyncio.run(coroutine)
@@ -110,6 +148,11 @@ RULEFUNC_CONTEXT_MARKER = "__is_snakemake_rule_func"
 
 
 def get_appdirs():
+    """Get the application directories for Snakemake.
+
+    Returns:
+        AppDirs: The application directories.
+    """
     global APPDIRS
     if APPDIRS is None:
         from appdirs import AppDirs
@@ -119,10 +162,29 @@ def get_appdirs():
 
 
 def is_local_file(path_or_uri):
+    """Check if a path or URI is a local file.
+
+    Args:
+        path_or_uri (str): The path or URI to check.
+
+    Returns:
+        bool: True if the path or URI is a local file, False otherwise.
+    """
     return parse_uri(path_or_uri).scheme == "file"
 
 
 def parse_uri(path_or_uri):
+    """Parse a URI or file path.
+
+    Args:
+        path_or_uri (str): The URI or file path to parse.
+
+    Returns:
+        Uri: A named tuple with scheme and uri_path attributes.
+
+    Raises:
+        NotImplementedError: If the URI scheme is not supported by smart_open.
+    """
     from smart_open import parse_uri
 
     try:
@@ -141,6 +203,16 @@ def parse_uri(path_or_uri):
 
 
 def smart_join(base, path, abspath=False):
+    """Join a base path or URI with a relative path.
+
+    Args:
+        base (str): The base path or URI.
+        path (str): The relative path to join.
+        abspath (bool, optional): Whether to return an absolute path. Defaults to False.
+
+    Returns:
+        str: The joined path or URI.
+    """
     if is_local_file(base):
         full = os.path.join(base, path)
         if abspath:
@@ -161,7 +233,14 @@ def smart_join(base, path, abspath=False):
 
 
 def num_if_possible(s):
-    """Convert string to number if possible, otherwise return string."""
+    """Convert a string to a number if possible, otherwise return the string.
+
+    Args:
+        s (str): The string to convert.
+
+    Returns:
+        int, float, or str: The converted number or the original string.
+    """
     try:
         return int(s)
     except ValueError:
@@ -172,20 +251,48 @@ def num_if_possible(s):
 
 
 def get_last_stable_version():
+    """Get the last stable version of Snakemake.
+
+    Returns:
+        str: The last stable version string.
+    """
     return __version__.split("+")[0]
 
 
 def get_container_image():
+    """Get the Snakemake container image string.
+
+    Returns:
+        str: The container image string.
+    """
     return f"snakemake/snakemake:v{get_last_stable_version()}"
 
 
 def get_uuid(name):
+    """Generate a UUID for a given name using the Snakemake namespace.
+
+    Args:
+        name (str): The name to generate a UUID for.
+
+    Returns:
+        UUID: The generated UUID.
+    """
     return uuid.uuid5(UUID_NAMESPACE, name)
 
 
 def get_file_hash(filename, algorithm="sha256"):
-    """find the SHA256 hash string of a file. We use this so that the
-    user can choose to cache working directories in storage.
+    """Find the SHA256 hash string of a file. We use this so that the
+-    user can choose to cache working directories in storage.
+
+    Args:
+        filename (str): The path to the file.
+        algorithm (str, optional): The hash algorithm to use (default: "sha256").
+
+    Returns:
+        str: The hash string.
+
+    Raises:
+        ValueError: If the algorithm is not available.
     """
     from snakemake.logging import logger
 
@@ -203,10 +310,18 @@ def get_file_hash(filename, algorithm="sha256"):
 
 
 def bytesto(bytes, to, bsize=1024):
-    """convert bytes to megabytes.
+    """Convert bytes to megabytes.
     bytes to mb: bytesto(bytes, 'm')
     bytes to gb: bytesto(bytes, 'g' etc.
     From https://gist.github.com/shawnbutts/3906915
+
+    Args:
+        bytes (int): The number of bytes.
+        to (str): The target unit (e.g., 'k', 'm', 'g').
+        bsize (int, optional): The block size for conversion. Defaults to 1024.
+
+    Returns:
+        float: The converted value.
     """
     levels = {"k": 1, "m": 2, "g": 3, "t": 4, "p": 5, "e": 6}
     answer = float(bytes)
@@ -215,136 +330,228 @@ def bytesto(bytes, to, bsize=1024):
     return answer
 
 
-def strip_prefix(text, prefix):
-    if text.startswith(prefix):
-        return text[len(prefix) :]
-    return text
+def is_rule_or_checkpoint(func):
+    """Check if a function is a Snakemake rule or checkpoint.
+
+    Args:
+        func (function): The function to check.
+
+    Returns:
+        bool: True if the function is a rule or checkpoint, False otherwise.
+    """
+    return getattr(func, RULEFUNC_CONTEXT_MARKER, False)
 
 
-def log_location(msg):
+@contextlib.contextmanager
+def capture():
+    """Capture stdout and stderr during the context."""
+    import io
     from snakemake.logging import logger
 
-    callerframerecord = inspect.stack()[1]
-    frame = callerframerecord[0]
-    info = inspect.getframeinfo(frame)
-    logger.debug(
-        "{}: {info.filename}, {info.function}, {info.lineno}".format(msg, info=info)
-    )
-
-
-def group_into_chunks(n, iterable):
-    """Group iterable into chunks of size at most n.
-
-    See https://stackoverflow.com/a/8998040.
-    """
-    it = iter(iterable)
-    while True:
-        chunk = tuple(itertools.islice(it, n))
-        if not chunk:
-            return
-        yield chunk
-
-
-class Rules:
-    """A namespace for rules so that they can be accessed via dot notation."""
-
-    def __init__(self):
-        self._rules = dict()
-
-    def _register_rule(self, name, rule):
-        self._rules[name] = rule
-
-    def __getattr__(self, name):
-        from snakemake.exceptions import WorkflowError
-
-        try:
-            return self._rules[name]
-        except KeyError:
-            raise WorkflowError(
-                f"Rule {name} is not defined in this workflow. "
-                f"Available rules: {', '.join(self._rules)}"
-            )
-
-
-class Scatter:
-    """A namespace for scatter to allow items to be accessed via dot notation."""
-
-    pass
-
-
-class Gather:
-    """A namespace for gather to allow items to be accessed via dot notation."""
-
-    pass
-
-
-def get_function_params(func):
-    return inspect.signature(func).parameters
-
-
-def get_input_function_aux_params(func, candidate_params):
-    func_params = get_function_params(func)
-    has_var_keyword = any(
-        param.kind == param.VAR_KEYWORD for param in func_params.values()
-    )
-    if has_var_keyword:
-        # If the function has a **kwargs parameter, we assume that it can take any
-        # parameter, so we return all candidate parameters.
-        return candidate_params
-    else:
-        return {k: v for k, v in candidate_params.items() if k in func_params}
+    oldout, olderr = sys.stdout, sys.stderr
+    try:
+        out = [io.StringIO(), io.StringIO()]
+        sys.stdout, sys.stderr = out
+        yield out
+    except Exception as e:
+        logger.error(f"Error during capture: {e}")
+        raise e
+    finally:
+        sys.stdout, sys.stderr = oldout, olderr
 
 
 def unique_justseen(iterable, key=None):
-    """
-    List unique elements, preserving order. Remember only the element just seen.
+    """List unique elements, preserving order. Remember only the element just seen.
 
-    From https://docs.python.org/3/library/itertools.html#itertools-recipes
+    Args:
+        iterable (iterable): The input iterable.
+        key (function, optional): A function to compute the key value for each element.
+
+    Returns:
+        iterator: An iterator of unique elements.
     """
-    # unique_justseen('AAAABBBCCDAABBB') --> A B C D A B
-    # unique_justseen('ABBcCAD', str.lower) --> A B c A D
     return map(next, map(operator.itemgetter(1), itertools.groupby(iterable, key)))
 
 
-# Taken from https://stackoverflow.com/a/34333710/7070491.
-# Thanks to Laurent Laporte.
-@contextlib.contextmanager
-def set_env(**environ):
+def split_filename(path, basedir=None):
+    """Split a path into its base directory and the filename.
+
+    Args:
+        path (str): The path to split.
+        basedir (str, optional): The base directory. If None, the base directory of the path is used.
+
+    Returns:
+        tuple: A tuple containing the base directory and filename.
     """
-    Temporarily set the process environment variables.
+    if basedir:
+        full = Path(basedir) / path
+    else:
+        full = Path(path)
+    return full.parent, full.name
 
-    >>> with set_env(PLUGINS_DIR='test/plugins'):
-    ...   "PLUGINS_DIR" in os.environ
-    True
 
-    >>> "PLUGINS_DIR" in os.environ
-    False
+def sanitize_wildcard(wildcard):
+    """Sanitize a wildcard for safe use in file names.
 
-    :type environ: dict[str, unicode]
-    :param environ: Environment variables to set
+    Args:
+        wildcard (str): The wildcard string to sanitize.
+
+    Returns:
+        str: The sanitized wildcard string.
     """
-    old_environ = dict(os.environ)
-    os.environ.update(environ)
-    try:
-        yield
-    finally:
-        os.environ.clear()
-        os.environ.update(old_environ)
+    return wildcard.replace(",", "__").replace(":", "__")
 
 
-def expand_vars_and_user(value):
-    if value is not None:
-        return os.path.expanduser(os.path.expandvars(value))
+def check_for_potential_iostream_unclosed_warnings():
+    """Check for potential unclosed iostream warnings in the logging module."""
+    from snakemake.logging import logger
+
+    if ON_WINDOWS:
+        try:
+            import __main__
+
+            for objname in dir(__main__):
+                obj = getattr(__main__, objname)
+                if isinstance(obj, (asyncio.StreamReader, asyncio.StreamWriter)):
+                    logger.warning(
+                        "Potentially unclosed iostream detected in "
+                        f"the logging module: {objname}."
+                    )
+        except ImportError as e:
+            logger.error(f"Error importing module: {e}")
+        raise e
 
 
-# Taken from https://stackoverflow.com/a/2166841/7070491
-# Thanks to Alex Martelli.
-def is_namedtuple_instance(x):
-    t = type(x)
-    b = t.__bases__
-    if len(b) != 1 or b[0] != tuple:
-        return False
-    f = getattr(t, "_fields", None)
-    if not isinstance(f, tuple):
-        return False
-    return all(type(n) is str for n in f)
+def format_wildcards_as_tokens(wildcards):
+    """Format wildcards as tokens for use in filenames or paths.
+
+    Args:
+        wildcards (dict): The wildcards to format.
+
+    Returns:
+        dict: The formatted wildcards.
+    """
+    return {key: sanitize_wildcard(str(value)) for key, value in wildcards.items()}
+
+
+def get_mem_mb(mem):
+    """Convert memory string (e.g., '2G') to megabytes.
+
+    Args:
+        mem (str): The memory string to convert.
+
+    Returns:
+        int: The memory in megabytes.
+
+    Raises:
+        ValueError: If the memory string is not in the correct format.
+    """
+    num = int(mem[:-1])
+    unit = mem[-1].lower()
+    if unit == "g":
+        return num * 1024
+    elif unit == "m":
+        return num
+    elif unit == "k":
+        return num // 1024
+    else:
+        raise ValueError("Unsupported memory unit: %s" % unit)
+
+
+def join_with_spaces(*args):
+    """Join arguments with spaces.
+
+    Args:
+        *args: Arguments to join.
+
+    Returns:
+        str: The joined string.
+    """
+    return " ".join(map(str, args))
+
+
+def get_io_prop_string(input_list, limit=IO_PROP_LIMIT):
+    """Create a string of input/output properties for job properties.
+
+    Args:
+        input_list (list): The list of input/output files.
+        limit (int, optional): The maximum number of files to include in the string. Defaults to IO_PROP_LIMIT.
+
+    Returns:
+        str: A string of input/output properties.
+    """
+    if len(input_list) > limit:
+        input_list = input_list[:limit] + ["..."]
+    return ", ".join(input_list)
+
+
+def uuid_to_short_id(uuid_str):
+    """Convert a UUID to a short identifier.
+
+    Args:
+        uuid_str (str): The UUID string.
+
+    Returns:
+        str: The short identifier.
+    """
+    return uuid_str.split("-")[0]
+
+
+def compile_path_glob(pathtype, pattern):
+    """Compile a glob pattern into a regex for file matching.
+
+    Args:
+        pathtype (str): The type of path ('input' or 'output').
+        pattern (str): The glob pattern to compile.
+
+    Returns:
+        re.Pattern: The compiled regex pattern.
+    """
+    import re
+
+    if pathtype not in {"input", "output"}:
+        raise ValueError("Invalid path type: %s" % pathtype)
+    pattern = pattern.replace(".", r"\.").replace("*", r"[^/]*").replace("?", r"[^/]")
+    if pathtype == "input":
+        pattern = pattern.replace("[^/]*", ".*")
+    pattern = "^" + pattern + "$"
+    return re.compile(pattern)
+
+
+def join_with_trailing_slash(path):
+    """Join a path with a trailing slash.
+
+    Args:
+        path (str): The path to join.
+
+    Returns:
+        str: The joined path with a trailing slash.
+    """
+    return os.path.join(path, "")
+
+
+def check_circular_dependency(jobs):
+    """Check for circular dependencies among jobs.
+
+    Args:
+        jobs (list): The list of jobs to check.
+
+    Raises:
+        WorkflowError: If a circular dependency is found.
+    """
+    from snakemake.logging import logger
+
+    visited = set()
+
+    def visit(job):
+        if job in visited:
+            return
+        visited.add(job)
+        for dep in job.dependencies:
+            visit(dep)
+            if dep in job.dependencies:
+                logger.error("Circular dependency found: %s" % job)
+                raise WorkflowError("Circular dependency detected")
+
+    for job in jobs:
+        visit(job)
